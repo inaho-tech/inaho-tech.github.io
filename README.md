@@ -2,6 +2,4 @@
 
 Source code for the official Inaho Tech website, hosted on GitHub Pages.
 
-## Structure
-
-The static website is stored in [`dist`](dist) and deployed to GitHub Pages through GitHub Actions.
+The static website is served directly from the repository root and is also deployable through the included GitHub Pages workflow.

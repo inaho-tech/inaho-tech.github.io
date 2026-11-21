@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://inaho-tech.github.io/sitemap.xml
+
