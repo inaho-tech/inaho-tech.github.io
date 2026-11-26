@@ -81,13 +81,58 @@ function setLanguage(language) {
   document.querySelector('meta[property="og:description"]').content = meta.socialDescription;
   document.querySelector('meta[name="twitter:title"]').content = meta.socialTitle;
   document.querySelector('meta[name="twitter:description"]').content = meta.socialDescription;
-  localStorage.setItem("inaho-language", language);
+  try { localStorage.setItem("inaho-language", language); } catch {}
 }
 
 toggle.addEventListener("click", () => setLanguage(document.documentElement.lang === "ja" ? "en" : "ja"));
-setLanguage(localStorage.getItem("inaho-language") === "en" ? "en" : "ja");
+try { setLanguage(localStorage.getItem("inaho-language") === "en" ? "en" : "ja"); } catch { setLanguage("ja"); }
 
 const header = document.querySelector("[data-header]");
 const updateHeader = () => header.classList.toggle("scrolled", window.scrollY > 24);
 window.addEventListener("scroll", updateHeader, { passive: true });
 updateHeader();
+
+const root = document.documentElement;
+const themeButton = document.querySelector(".theme-toggle");
+const preference = matchMedia("(prefers-color-scheme: dark)");
+let savedTheme;
+try { savedTheme = localStorage.getItem("inaho-theme"); } catch {}
+function applyTheme(dark) {
+  root.dataset.theme = dark ? "dark" : "light";
+  themeButton.setAttribute("aria-pressed", String(dark));
+  document.querySelector('meta[name="theme-color"]').content = dark ? "#151810" : "#faf9f4";
+}
+applyTheme(savedTheme ? savedTheme === "dark" : preference.matches);
+themeButton.addEventListener("click", () => {
+  const dark = root.dataset.theme !== "dark";
+  savedTheme = dark ? "dark" : "light";
+  applyTheme(dark);
+  try { localStorage.setItem("inaho-theme", savedTheme); } catch {}
+});
+preference.addEventListener("change", e => { if (!savedTheme) applyTheme(e.matches); });
+const navLinks = [...document.querySelectorAll(".primary-nav a")];
+const sections = navLinks.map(a => document.querySelector(a.hash));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+let queued = false;
+function renderScroll() {
+  queued = false;
+  const current = sections.reduce((active, section) => section.getBoundingClientRect().top < innerHeight * .45 ? section : active, null);
+  navLinks.forEach(a => {
+    if (current && a.hash === "#" + current.id) a.setAttribute("aria-current", "true");
+    else a.removeAttribute("aria-current");
+  });
+  if (reduced.matches) return;
+  root.classList.add("motion-ready");
+  const mark = document.querySelector(".hero-mark");
+  const rect = mark.getBoundingClientRect();
+  if (rect.bottom > 0) mark.style.setProperty("--seed-angle", Math.max(0, Math.min(45, -rect.top * .12)) + "deg");
+  document.querySelectorAll(".project-visual").forEach(el => {
+    const box = el.getBoundingClientRect();
+    const value = Math.max(-12, Math.min(12, (box.top + box.height / 2 - innerHeight / 2) * .035));
+    el.style.setProperty("--travel", value + "px");
+  });
+}
+function scheduleScroll() { if (!queued) { queued = true; requestAnimationFrame(renderScroll); } }
+addEventListener("scroll", scheduleScroll, { passive: true });
+addEventListener("resize", scheduleScroll);
+renderScroll();
